@@ -25,7 +25,7 @@ tags: [wayra, progreso, estado]
 - Scripts smoke históricos F3–F8.
 - Documentación Obsidian + Mermaid + fuentes Archify.
 
-### 🟨 En la rama `improve/architecture-docs-tests`
+### 🟩 Rama `improve/architecture-docs-tests` — CI validada
 
 - corrección de trazabilidad temporal CHIRPS;
 - corrección del contrato de regrid 0.05° → 0.1°;
@@ -35,7 +35,7 @@ tags: [wayra, progreso, estado]
 - especificación de arquitectura y catálogo de datasets;
 - fuente Archify de arquitectura actual.
 
-**Estado de validación:** pendiente de la ejecución de CI de esta rama. Hasta disponer del resultado no se marcarán estos cambios como validados.
+**Evidencia CI:** GitHub Actions run `35793090677`, job `Python 3.12 tests`, finalizado con `success`: **9 tests passed** y **76% de cobertura total** sobre el paquete actual. Esto valida los contratos unitarios incluidos en la rama, no la evaluación científica de modelos de ML.
 
 ## Evidencia histórica de smokes anteriores
 
@@ -50,7 +50,7 @@ Evidencia registrada en la sesión previa:
 - máscara PER-ADM0;
 - outputs NPY/manifiesto local.
 
-La implementación de `regrid_block` fue auditada posteriormente y se encontró un defecto en la relación de resoluciones; la rama de mejora lo corrige y añade tests. Por ese motivo, la evidencia anterior no debe utilizarse como validación de la nueva versión hasta reejecutar el smoke.
+La implementación de `regrid_block` fue auditada posteriormente y se encontró un defecto en la relación de resoluciones; la rama de mejora lo corrige y sus contratos unitarios ya pasaron CI. Sin embargo, el smoke F3 con el raster real debe reejecutarse con esta versión para renovar la evidencia end-to-end.
 
 ### F4 — split temporal histórico
 
@@ -87,13 +87,13 @@ Por tanto, no se considera que la regresión o clasificación estén completadas
 | RQ-04 LazyPredict | No iniciado |
 | RQ-05 Baseline | No iniciado |
 | RQ-06 Split cronológico | Implementación conceptual/smoke; dataset final pendiente |
-| RQ-07 Trazabilidad temporal | En desarrollo; ingesta CHIRPS mejorada |
+| RQ-07 Trazabilidad temporal | En desarrollo; ingesta CHIRPS mejorada y testeada |
 | RQ-08 Modo retrospectivo | En desarrollo |
 | RQ-09 Operativo deshabilitado | Decisión vigente |
 | RQ-10 API | No iniciado |
 | RQ-11 Frontend | No iniciado |
 | RQ-12 Disclaimers | Documentado; aplicación pendiente |
-| RQ-20 Reproducibilidad | En desarrollo |
+| RQ-20 Reproducibilidad | En desarrollo; CI unitario verde |
 | RQ-21 No inventar datos/métricas | Regla vigente |
 | RQ-22 Registro de modelos fallidos/exitosos | Pendiente de ML |
 | RQ-23 DataNote/trazabilidad académica | En desarrollo en `docs/academic/` |
@@ -101,14 +101,13 @@ Por tanto, no se considera que la regresión o clasificación estén completadas
 
 ## Próximos hitos
 
-1. Obtener CI verde para correcciones de ingesta/regrid.
-2. Reejecutar F3 con la versión corregida y guardar evidencia de salida.
-3. Auditar y ampliar la serie temporal CHIRPS.
-4. Formalizar Bronze/Silver/Gold.
-5. Integrar al menos una segunda fuente climática.
-6. Construir dataset Gold nacional reproducible.
-7. Ejecutar EDA y los dos pipelines exigidos por la rúbrica.
-8. Solo después desarrollar API/web sobre resultados reales.
+1. Reejecutar F3 con la versión corregida y guardar evidencia end-to-end.
+2. Auditar y ampliar la serie temporal CHIRPS.
+3. Formalizar Bronze/Silver/Gold.
+4. Integrar al menos una segunda fuente climática.
+5. Construir dataset Gold nacional reproducible.
+6. Ejecutar EDA y los dos pipelines exigidos por la rúbrica.
+7. Solo después desarrollar API/web sobre resultados reales.
 
 ## Fuentes de verdad
 
