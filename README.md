@@ -1,8 +1,14 @@
 # Wayra AI - Sistema de Análisis Climático y Predicción de Precipitaciones del Perú
 
+![GitHub](https://img.shields.io/github/license/Lobitoxxx/Wayra_AI)
+![GitHub repo size](https://img.shields.io/github/repo-size/Lobitoxxx/Wayra_AI)
+![GitHub last commit](https://img.shields.io/github/last-commit/Lobitoxxx/Wayra_AI)
+![Python](https://img.shields.io/badge/python-3.12-blue)
+![uv](https://img.shields.io/badge/uv-0.12.5-brightgreen)
+
 ## Descripción
 
-Wayra AI es un sistema open source para el análisis climático y predicción de precipitaciones en el Perú. Utiliza datos auténticos de CHIRPS, implementa modelos de aprendizaje automático, y proporciona una API FastAPI para consultas. La plataforma incluye una interfaz web en español y está documentada con Mermaid diagrams.
+Wayra AI es un sistema open source para el análisis climático y predicción de precipitaciones en el Perú. Utiliza datos auténticos de CHIRPS v3.0 rnl, implementa modelos de aprendizaje automático con LazyPredict, y proporciona una API FastAPI para consultas. La plataforma incluye una interfaz web en español y está documentada con diagramas Mermaid profesionales.
 
 ## Tabla de Contenidos
 
@@ -19,17 +25,38 @@ Wayra AI es un sistema open source para el análisis climático y predicción de
 
 ## Características Principales
 
-- ✅ **Datos Auténticos**: Utiliza datos reales de CHIRPS v3.0 rnl (UCSB)
-- ✅ **Descarga Reanudable**: Soporte para reanudar descargas interrumpidas
-- ✅ **Verificación de Integridad**: Checksum SHA-256 para validar archivos descargados
-- ✅ **Preprocesado Geoespacial**: Re-muestreo 0.05° → 0.1° mediante agregación box-mean
-- ✅ **Máscara Oficial**: Utiliza límites oficiales de Perú (geoBoundaries PER-ADM0)
-- ✅ **División Temporal**: Partición cronológica train/val/test sin fugas (RQ-07/08)
-- ✅ **Selección de Features**: Estadísticas locales y espaciales sin sobreajuste
-- ✅ **Preparación para Modelado**: Datos listos para LazyPredict u otros modelos
-- ✅ **Documentación Completa**: Manifestos JSON trazables para cada etapa
-- ✅ **Interfaz Web**: Consulta de predicciones en español
-- ✅ **API REST**: Endpoints para integración con otras aplicaciones
+### ✅ Datos Auténticos
+Utiliza datos reales de CHIRPS v3.0 rnl (UCSB Climate Hazards Center) con verificación de integridad SHA-256
+
+### ✅ Descarga Reanudable
+Soporte para reanudar descargas interrumpidas mediante requests con Range headers
+
+### ✅ Verificación de Integridad
+Checksum SHA-256 para validar archivos descargados contra los proporcionados por el servidor
+
+### ✅ Preprocesado Geoespacial
+Re-muestreo 0.05° → 0.1° mediante agregación box-mean (media por bloques 2×2) y aplicación de máscara oficial de Perú
+
+### ✅ Máscara Oficial
+Utiliza límites oficiales de Perú proporcionados por geoBoundaries (PER-ADM0)
+
+### ✅ División Temporal
+Partición cronológica train/val/test sin fugas (RQ-07/08) para evitar sobreajuste temporal
+
+### ✅ Selección de Features
+Extracción de 7 características estadísticas y espaciales locales sin sobreajuste
+
+### ✅ Preparación para Modelado
+Datos listos para LazyPredict u otros modelos de aprendizaje automático
+
+### ✅ Documentación Completa
+Manifestos JSON trazables para cada etapa con timestamps y checksums
+
+### ✅ Interfaz Web
+Consulta de predicciones en español mediante interfaz gráfica intuitiva
+
+### ✅ API REST
+Endpoints para integración con otras aplicaciones mediante REST API
 
 ## Instalación
 
@@ -623,9 +650,9 @@ wayra-ai/
 │   │   │   ├── mesh.py
 │   │   │   └── mask.py
 │   │   ├── web/
-│   │   │   └__init__.py
+│   │   │   └── __init__.py
 │   │   └── web/
-│   │       └__init__.py
+│   │       └── __init__.py
 ├── scripts/
 │   ├── smoke_f2.py
 │   ├── smoke_f3.py
@@ -690,10 +717,10 @@ Para más información, reportar errores o contribuir al proyecto:
 
 ## Agradecimientos
 
-- CHIRPS dataset proporcionado por UCSB Climate Hazards Center
-- Límite oficial de Perú proporcionado por geoBoundaries
-- LazyPredict para evaluación rápida de modelos
-- Comunidad de código abierto por herramientas y bibliotecas utilizadas
+- **Datos Climáticos**: CHIRPS dataset proporcionado por UCSB Climate Hazards Center
+- **Límites Geográficos**: Límite oficial de Perú proporcionado por geoBoundaries
+- **Evaluación de Modelos**: LazyPredict para evaluación rápida de modelos
+- **Comunidad Open Source**: Herramientas y bibliotecas de código abierto utilizadas
 
 ---
 
