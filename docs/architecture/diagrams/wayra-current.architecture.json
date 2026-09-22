@@ -1,0 +1,212 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Wayra AI · Arquitectura actual comprobable",
+    "quality_profile": "showcase",
+    "viewBox": [1320, 620],
+    "views": [
+      {
+        "id": "current-pipeline",
+        "label": "Pipeline actual",
+        "focus": ["chirps", "ingestion", "raw", "mesh", "mask", "processed"],
+        "note": "Componentes presentes en código para ingesta y preprocesamiento."
+      },
+      {
+        "id": "quality-docs",
+        "label": "Calidad y documentación",
+        "focus": ["tests", "ci", "docs"],
+        "note": "Pruebas, CI y documentación incorporados en la rama de mejora."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "chirps",
+      "type": "external",
+      "label": "CHIRPS v3",
+      "sublabel": "GeoTIFF diario final RNL",
+      "pos": [30, 100],
+      "size": [180, 64]
+    },
+    {
+      "id": "ingestion",
+      "type": "backend",
+      "label": "Ingesta CHIRPS",
+      "sublabel": "src/wayra/ingestion/chirps.py",
+      "pos": [285, 100],
+      "size": [200, 64]
+    },
+    {
+      "id": "raw",
+      "type": "database",
+      "label": "Raw / manifiestos",
+      "sublabel": "archivo original + SHA-256",
+      "pos": [565, 100],
+      "size": [190, 64]
+    },
+    {
+      "id": "mesh",
+      "type": "backend",
+      "label": "Malla + regrid",
+      "sublabel": "0.05° → 0.1°",
+      "pos": [830, 100],
+      "size": [180, 64]
+    },
+    {
+      "id": "geoboundaries",
+      "type": "external",
+      "label": "PER-ADM0",
+      "sublabel": "GeoJSON territorial",
+      "pos": [830, 245],
+      "size": [180, 64]
+    },
+    {
+      "id": "mask",
+      "type": "backend",
+      "label": "Máscara Perú",
+      "sublabel": "rasterio.features",
+      "pos": [1080, 245],
+      "size": [180, 64]
+    },
+    {
+      "id": "processed",
+      "type": "database",
+      "label": "Outputs smoke",
+      "sublabel": "NPY + manifest local",
+      "pos": [1080, 100],
+      "size": [180, 64]
+    },
+    {
+      "id": "tests",
+      "type": "backend",
+      "label": "Unit tests",
+      "sublabel": "tests/test_chirps.py · test_mesh.py",
+      "pos": [285, 405],
+      "size": [210, 64]
+    },
+    {
+      "id": "ci",
+      "type": "cloud",
+      "label": "GitHub Actions",
+      "sublabel": "Python 3.12 + pytest",
+      "pos": [575, 405],
+      "size": [190, 64]
+    },
+    {
+      "id": "docs",
+      "type": "frontend",
+      "label": "Documentación",
+      "sublabel": "README · Mermaid · Archify JSON",
+      "pos": [850, 405],
+      "size": [210, 64]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Núcleo funcional actual",
+      "wraps": ["ingestion", "raw", "mesh", "mask", "processed"]
+    },
+    {
+      "kind": "region",
+      "label": "Calidad y conocimiento",
+      "wraps": ["tests", "ci", "docs"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "c-ing",
+      "from": "chirps",
+      "to": "ingestion",
+      "label": "HTTP",
+      "variant": "emphasis"
+    },
+    {
+      "id": "ing-raw",
+      "from": "ingestion",
+      "to": "raw",
+      "label": "archivo + provenance"
+    },
+    {
+      "id": "raw-mesh",
+      "from": "raw",
+      "to": "mesh",
+      "label": "raster"
+    },
+    {
+      "id": "mesh-proc",
+      "from": "mesh",
+      "to": "processed",
+      "label": "campo 0.1°"
+    },
+    {
+      "id": "geo-mask",
+      "from": "geoboundaries",
+      "to": "mask",
+      "label": "geometry"
+    },
+    {
+      "id": "mask-proc",
+      "from": "mask",
+      "to": "processed",
+      "label": "mask"
+    },
+    {
+      "id": "code-tests",
+      "from": "ingestion",
+      "to": "tests",
+      "variant": "dashed"
+    },
+    {
+      "id": "mesh-tests",
+      "from": "mesh",
+      "to": "tests",
+      "variant": "dashed"
+    },
+    {
+      "id": "tests-ci",
+      "from": "tests",
+      "to": "ci",
+      "label": "pytest"
+    },
+    {
+      "id": "current-docs",
+      "from": "ci",
+      "to": "docs",
+      "label": "evidencia / estado",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Implementado",
+      "items": [
+        "Ingesta CHIRPS con trazabilidad",
+        "Malla nacional 0.1° y máscara PER-ADM0",
+        "Regrid validado por contrato",
+        "Pruebas unitarias y workflow CI en rama de mejora"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Aún no existe como funcionalidad",
+      "items": [
+        "Dataset maestro multi-fuente",
+        "Regresión y clasificación entrenadas",
+        "API FastAPI",
+        "Frontend web"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Trazabilidad",
+      "items": [
+        "observation_time separado de published_at",
+        "SHA-256 local y estado de verificación externa",
+        "No publicar métricas sin evaluación real"
+      ]
+    }
+  ]
+}
