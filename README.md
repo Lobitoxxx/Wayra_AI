@@ -1,728 +1,511 @@
-# Wayra AI - Sistema de Análisis Climático y Predicción de Precipitaciones del Perú
+# Wayra AI
 
-![GitHub](https://img.shields.io/github/license/Lobitoxxx/Wayra_AI)
-![GitHub repo size](https://img.shields.io/github/repo-size/Lobitoxxx/Wayra_AI)
-![GitHub last commit](https://img.shields.io/github/last-commit/Lobitoxxx/Wayra_AI)
-![Python](https://img.shields.io/badge/python-3.12-blue)
-![uv](https://img.shields.io/badge/uv-0.12.5-brightgreen)
+> Plataforma de investigación para análisis climático y predicción de precipitaciones en el Perú.
 
-## Descripción
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
+![CI](https://github.com/Lobitoxxx/Wayra_AI/actions/workflows/ci.yml/badge.svg)
+![Estado](https://img.shields.io/badge/estado-en%20desarrollo-f59e0b)
 
-Wayra AI es un sistema open source para el análisis climático y predicción de precipitaciones en el Perú. Utiliza datos auténticos de CHIRPS v3.0 rnl, implementa modelos de aprendizaje automático con LazyPredict, y proporciona una API FastAPI para consultas. La plataforma incluye una interfaz web en español y está documentada con diagramas Mermaid profesionales.
+Wayra AI integra datos climáticos, oceanográficos y territoriales con una arquitectura reproducible orientada a dos problemas de aprendizaje supervisado: **regresión de precipitación futura** y **clasificación de lluvia extrema**. El alcance geográfico objetivo es **Perú completo**, usando una cuadrícula común de 0.1° para los productos rasterizados.
 
-## Tabla de Contenidos
+> [!IMPORTANT]
+> Wayra AI es un proyecto académico y de investigación. **No emite alertas oficiales, no reemplaza a SENAMHI, ENFEN, INDECI, ANA ni CENEPRED y no debe usarse por sí solo para decisiones de emergencia.** El modo operativo permanece deshabilitado hasta contar con fuentes oportunas, modelos validados y evaluación temporal adecuada.
 
-- [Descripción](#descripción)
-- [Características Principales](#características-principales)
-- [Instalación](#instalación)
-- [Uso](#uso)
-- [Arquitectura del Sistema](#arquitectura-del-sistema)
-- [Diagramas Mermaid](#diagramas-mermaid)
-- [Documentación Técnica](#documentación-técnica)
-- [Contribución](#contribución)
-- [Licencia](#licencia)
-- [Contacto](#contacto)
+## Estado real del repositorio
 
-## Características Principales
+La documentación distingue deliberadamente entre lo que existe en código y lo que forma parte de la arquitectura objetivo.
 
-### ✅ Datos Auténticos
-Utiliza datos reales de CHIRPS v3.0 rnl (UCSB Climate Hazards Center) con verificación de integridad SHA-256
+| Componente | Estado | Evidencia en el repositorio |
+|---|---|---|
+| Ingesta CHIRPS v3 diaria | 🟩 Implementado | `src/wayra/ingestion/chirps.py` |
+| Trazabilidad de descarga y SHA-256 | 🟩 Implementado | manifiesto de ingesta + pruebas unitarias |
+| Malla nacional 0.1° | 🟩 Implementado | `src/wayra/preprocessing/mesh.py` |
+| Máscara territorial de Perú | 🟩 Implementado | `src/wayra/preprocessing/mask.py` + GeoJSON PER-ADM0 |
+| Remuestreo CHIRPS 0.05° → 0.1° | 🟩 Implementado | agregación de bloques validada por tests |
+| Pruebas automáticas | 🟨 En desarrollo | `tests/` + GitHub Actions |
+| ERA5-Land | 🟦 Planificado | adaptador y contrato pendientes |
+| SENAMHI | 🟦 Planificado | adaptador y auditoría de dataset pendientes |
+| NOAA / IMARPE | 🟦 Planificado | subsistema oceanográfico pendiente |
+| Dataset maestro multi-fuente | 🟦 Planificado | Data Lake Silver/Gold pendiente |
+| Regresión + LazyRegressor | 🟦 Planificado | sin métricas finales todavía |
+| Clasificación + LazyClassifier | 🟦 Planificado | sin métricas finales todavía |
+| API FastAPI | 🟦 Planificado | `apps/api/` aún no contiene implementación funcional |
+| Aplicación web | 🟦 Planificado | `apps/web/` aún no contiene implementación funcional |
+| Pronóstico operativo | ⛔ Deshabilitado | decisión arquitectónica explícita |
 
-### ✅ Descarga Reanudable
-Soporte para reanudar descargas interrumpidas mediante requests con Range headers
+**No existen todavía métricas finales verificadas de RMSE, R², Balanced Accuracy, F1 o matrices de confusión.** Los smoke tests históricos del repositorio no sustituyen una evaluación con conjuntos train/validation/test suficientes.
 
-### ✅ Verificación de Integridad
-Checksum SHA-256 para validar archivos descargados contra los proporcionados por el servidor
+---
 
-### ✅ Preprocesado Geoespacial
-Re-muestreo 0.05° → 0.1° mediante agregación box-mean (media por bloques 2×2) y aplicación de máscara oficial de Perú
+## Objetivos
 
-### ✅ Máscara Oficial
-Utiliza límites oficiales de Perú proporcionados por geoBoundaries (PER-ADM0)
+1. Integrar datos climáticos auténticos y trazables para todo el Perú.
+2. Construir un dataset maestro espacio-temporal con control de procedencia y disponibilidad.
+3. Comparar modelos de regresión para estimar precipitación futura en milímetros.
+4. Comparar modelos de clasificación para detectar superación de umbrales de lluvia extrema.
+5. Separar rigurosamente el análisis retrospectivo de cualquier futura capacidad operativa.
+6. Mantener una arquitectura extensible para peligros naturales sin atribuir capacidades predictivas no validadas.
 
-### ✅ División Temporal
-Partición cronológica train/val/test sin fugas (RQ-07/08) para evitar sobreajuste temporal
+## Fuentes de datos
 
-### ✅ Selección de Features
-Extracción de 7 características estadísticas y espaciales locales sin sobreajuste
+| Subsistema | Fuente | Uso previsto | Estado de integración |
+|---|---|---|---|
+| Precipitación | [CHIRPS v3](https://data.chc.ucsb.edu/products/CHIRPS/v3.0/) | lluvia histórica diaria y variable objetivo candidata | 🟩 primer adaptador implementado |
+| Atmósfera terrestre | [ERA5-Land](https://cds.climate.copernicus.eu/datasets/reanalysis-era5-land) | temperatura, punto de rocío, presión, viento y otras variables | 🟦 pendiente |
+| Observaciones Perú | [SENAMHI - Datos abiertos](https://www.datosabiertos.gob.pe/dataset/variables-meteorologicas-de-las-estaciones-autom%C3%A1ticas-de-intercambio-internacional-servicio) | contraste y observaciones de estaciones | 🟦 pendiente |
+| Océano / ENOS | [NOAA CPC](https://www.cpc.ncep.noaa.gov/data/indices/) | Niño 1+2, Niño 3.4 y otros indicadores oceánicos | 🟦 pendiente |
+| Océano costero | [IMARPE - Datos abiertos](https://www.datosabiertos.gob.pe/) | TSM y anomalías costeras | 🟦 pendiente |
+| Territorio | [geoBoundaries](https://www.geoboundaries.org/) | límite nacional para máscara espacial | 🟩 incorporado |
+| Emergencias | INDECI / SINPAD | extensión futura de análisis de peligros | 🟦 fuera del MVP predictivo actual |
 
-### ✅ Preparación para Modelado
-Datos listos para LazyPredict u otros modelos de aprendizaje automático
+Cada fuente mantiene su propia licencia y condiciones de uso. La licencia del código de Wayra AI está **pendiente de decisión** y no debe confundirse con las licencias de los datasets.
 
-### ✅ Documentación Completa
-Manifestos JSON trazables para cada etapa con timestamps y checksums
+---
 
-### ✅ Interfaz Web
-Consulta de predicciones en español mediante interfaz gráfica intuitiva
+## Arquitectura objetivo
 
-### ✅ API REST
-Endpoints para integración con otras aplicaciones mediante REST API
+```mermaid
+flowchart LR
+    subgraph S[Fuentes externas]
+      C[CHIRPS]
+      E[ERA5-Land]
+      SE[SENAMHI]
+      N[NOAA]
+      I[IMARPE]
+    end
 
-## Instalación
+    subgraph D[Plataforma de datos]
+      ING[Adaptadores de ingesta]
+      B[(Bronze\noriginales + manifests)]
+      Q[Calidad + normalización\ntemporal/geoespacial]
+      S2[(Silver\ndatos normalizados)]
+      F[Feature engineering\nanti-fuga]
+      G[(Gold\ndatasets versionados)]
+    end
+
+    subgraph ML[Inteligencia artificial]
+      R[Pipeline regresión]
+      CL[Pipeline clasificación]
+      EV[Evaluación + registro\nde experimentos]
+    end
+
+    subgraph APP[Servicios futuros]
+      INF[Inferencia retrospectiva]
+      API[API /api/v1]
+      WEB[Wayra AI Web]
+    end
+
+    C --> ING
+    E --> ING
+    SE --> ING
+    N --> ING
+    I --> ING
+    ING --> B --> Q --> S2 --> F --> G
+    G --> R --> EV
+    G --> CL --> EV
+    EV --> INF --> API --> WEB
+```
+
+### Qué está implementado hoy
+
+El repositorio actual cubre principalmente el tramo **CHIRPS → ingesta → malla/máscara → preprocesado**. Los componentes Gold, ML, API y web del diagrama son la arquitectura objetivo y se implementarán de forma incremental.
+
+---
+
+## Arquitectura de datos: Bronze / Silver / Gold
+
+```mermaid
+flowchart TD
+    A[Proveedor oficial] --> B[Descarga controlada]
+    B --> C[(BRONZE)]
+    C --> C1[Archivo original]
+    C --> C2[URL + versión]
+    C --> C3[SHA-256]
+    C --> C4[retrieved_at]
+
+    C --> D[Validación y transformación]
+    D --> E[(SILVER)]
+    E --> E1[Unidades normalizadas]
+    E --> E2[Tiempo normalizado]
+    E --> E3[Geometría / malla común]
+    E --> E4[banderas de calidad]
+
+    E --> F[Integración + features]
+    F --> G[(GOLD)]
+    G --> G1[Dataset maestro versionado]
+    G --> G2[Dataset regresión]
+    G --> G3[Dataset clasificación]
+    G --> G4[Agregados territoriales]
+```
+
+Principios:
+
+- **Bronze es inmutable**: conserva el original descargado.
+- **Silver es auditable**: normaliza sin perder procedencia.
+- **Gold es reproducible**: cada dataset de entrenamiento tiene versión y contrato.
+- Los datos raster voluminosos no tienen por qué almacenarse íntegramente en PostgreSQL; el catálogo y la metadata sí pueden persistirse allí y ampliarse con PostGIS.
+
+---
+
+## Trazabilidad temporal
+
+Una fecha de observación no es necesariamente la fecha en la que un dato estuvo disponible para una predicción.
+
+```mermaid
+sequenceDiagram
+    participant P as Proveedor
+    participant B as Bronze
+    participant S as Silver
+    participant M as Modelo
+
+    P->>B: dato observado + archivo publicado
+    Note over B: observation_time / valid_from / valid_to
+    Note over B: published_at (solo si es verificable)
+    B->>B: retrieved_at + SHA-256
+    B->>S: normalización y control de calidad
+    Note over S: available_at si puede demostrarse
+    S->>M: feature elegible
+    Note over M: feature.available_at <= forecast_issued_at
+```
+
+Wayra AI conserva o proyecta los siguientes campos:
+
+- `observation_time` o `valid_from` / `valid_to`
+- `published_at` cuando exista evidencia
+- `source_last_modified` como metadato HTTP, sin confundirlo con publicación científica
+- `retrieved_at`
+- `available_at` cuando pueda reconstruirse de manera verificable
+- `forecast_issued_at` para inferencia
+- `source_version`, `dataset_version` y checksums
+
+La ingesta CHIRPS actual **no inventa `published_at`**: la fecha del nombre del archivo se registra como observación, no como fecha de publicación.
+
+---
+
+## Procesamiento geoespacial
+
+La decisión vigente es trabajar con una cuadrícula regular de **0.1° en EPSG:4326** para todo Perú.
+
+```mermaid
+flowchart LR
+    A[CHIRPS 0.05°] --> B[Validar resolución y cobertura]
+    B --> C[Agregación 2x2\nmedia ignorando nodata]
+    C --> D[Malla Wayra 0.1°]
+    G[PER-ADM0] --> H[Rasterización]
+    H --> I[Máscara Perú]
+    D --> J[Campo climático nacional]
+    I --> J
+```
+
+`regrid_block()` valida que la resolución destino sea un múltiplo entero de la fuente. Para CHIRPS 0.05° → Wayra 0.1°, el factor esperado es 2. La función también valida cobertura, nodata y forma de salida.
+
+> La cuadrícula 0.1° es una representación analítica. No implica una precisión física uniforme de 10 km ni reemplaza la resolución de la fuente original.
+
+---
+
+## Pipelines de inteligencia artificial
+
+### Regresión
+
+Objetivo académico propuesto: `precipitation_next_day_mm`.
+
+```mermaid
+flowchart LR
+    A[Gold versionado] --> B[EDA]
+    B --> C[Features disponibles hasta t]
+    C --> D[Split cronológico]
+    D --> E[Baseline]
+    D --> F[LazyRegressor]
+    F --> G[Comparar RMSE + R²]
+    G --> H[Entrenar modelo seleccionado]
+    H --> I[Test final]
+    I --> J[Predicción nuevo registro]
+```
+
+Métricas obligatorias: **RMSE y R²**. Se añadirá MAE como apoyo. No se publicarán valores hasta ejecutar el experimento con un test real y suficiente.
+
+### Clasificación
+
+Objetivo académico propuesto: detectar si la precipitación del día siguiente supera un umbral extremo definido con el conjunto de entrenamiento o una climatología de referencia previamente fijada.
+
+```mermaid
+flowchart LR
+    A[Gold versionado] --> B[EDA + balance de clases]
+    B --> C[Umbral calculado sin test]
+    C --> D[Split cronológico]
+    D --> E[LazyClassifier]
+    E --> F[Seleccionar 2 modelos]
+    F --> G[Balanced Accuracy + F1 + Recall]
+    G --> H[Matriz de confusión modelo A]
+    G --> I[Matriz de confusión modelo B]
+    H --> J[Modelo seleccionado]
+    I --> J
+    J --> K[Predicción + probabilidad]
+```
+
+La clase positiva significa **lluvia extrema según el umbral definido**, no “inundación”, “huaico” ni “desastre”.
+
+---
+
+## Análisis retrospectivo vs. pronóstico operativo
+
+```mermaid
+flowchart TB
+    H[Datos históricos consolidados] --> R[Modo retrospectivo]
+    R --> E[Entrenamiento / evaluación académica]
+
+    O[Datos disponibles en tiempo real\n+ pronósticos externos emitidos] --> OP[Modo operativo]
+    OP --> V{¿Fuente oportuna +\nmodelo validado?}
+    V -- No --> X[DESHABILITADO]
+    V -- Sí --> P[Inferencia operativa versionada]
+```
+
+El MVP se concentra primero en el **modo retrospectivo**. Productos de reanálisis o datos definitivos publicados con retraso no pueden tratarse automáticamente como entradas disponibles en tiempo real.
+
+---
+
+## Peligros naturales
+
+El dominio de peligros se mantendrá desacoplado de los modelos meteorológicos.
+
+Una predicción de precipitación extrema **no equivale** a una probabilidad de inundación, huaico, deslizamiento o desborde. Cada peligro futuro deberá tener:
+
+- definición del evento;
+- dataset histórico verificable;
+- variables apropiadas (hidrología, topografía, geología, etc.);
+- modelo especializado;
+- validación independiente;
+- métricas y limitaciones documentadas.
+
+---
+
+## Archify: arquitectura interactiva
+
+Wayra AI utiliza **Mermaid** para diagramas directamente legibles en Markdown y mantiene fuentes de **Archify** para explorar la arquitectura de forma interactiva.
+
+Archivos existentes:
+
+```text
+docs/architecture/diagrams/
+├── architecture_wayra.json
+├── dataflow_wayra.json
+├── lifecycle_wayra.json
+└── wayra-propuesta.architecture.json
+```
+
+El flujo recomendado es:
+
+```bash
+# 1. Instalar la skill de Archify
+npx skills add tt-a1i/archify -g
+
+# 2. Desde OpenCode, solicitar que use Archify sobre el JSON de arquitectura
+#    y genere un HTML self-contained.
+
+# 3. Validar el artefacto con el perfil showcase antes de publicarlo.
+#    La ruta exacta de bin/archify.mjs depende de dónde haya instalado la skill.
+```
+
+Ejemplo conceptual si se ejecuta desde el repositorio de Archify o desde una instalación que exponga su CLI:
+
+```bash
+node bin/archify.mjs validate architecture \
+  docs/architecture/diagrams/wayra-propuesta.architecture.json \
+  --quality showcase --json
+
+node bin/archify.mjs deliver architecture \
+  docs/architecture/diagrams/wayra-propuesta.architecture.json \
+  docs/architecture/diagrams/wayra-propuesta.architecture.html \
+  --quality showcase --json
+
+node bin/archify.mjs visual-check \
+  docs/architecture/diagrams/wayra-propuesta.architecture.html \
+  --json
+```
+
+GitHub no ejecuta un HTML interactivo dentro del README; el archivo generado debe abrirse localmente o publicarse posteriormente mediante un mecanismo de hosting. Los JSON son la fuente versionable y deben actualizarse cuando cambie la arquitectura.
+
+Más detalle: [`docs/architecture/archify.md`](docs/architecture/archify.md).
+
+---
+
+## Estructura del repositorio
+
+```text
+Wayra_AI/
+├── .agents/                  # skills/contexto para agentes
+├── .github/workflows/        # CI
+├── .opencode/                # configuración y plugin Graphify
+├── apps/
+│   ├── api/                  # futuro backend FastAPI
+│   └── web/                  # futura aplicación web
+├── data/
+│   ├── external/             # recursos externos pequeños y versionables
+│   ├── raw/                  # Bronze local (ignorado cuando corresponde)
+│   └── processed/            # Silver/Gold local
+├── docs/
+│   ├── architecture/
+│   ├── knowledge/            # memoria Obsidian
+│   ├── sources/
+│   └── academic/
+├── models/                   # artefactos ML (cuando existan)
+├── scripts/                  # smokes y utilidades reproducibles
+├── src/wayra/
+│   ├── ingestion/
+│   └── preprocessing/
+├── tests/
+├── AGENTS.md
+├── pyproject.toml
+└── README.md
+```
+
+Las carpetas vacías reservan dominios futuros; **su existencia no significa que la funcionalidad ya esté implementada**.
+
+---
+
+## Instalación para desarrollo
 
 ### Requisitos
 
 - Python 3.12
-- uv 0.12.5
 - Git
+- recomendado: [uv](https://docs.astral.sh/uv/)
 
-### Pasos
-
-1. Clonar el repositorio:
+### Con uv
 
 ```bash
 git clone https://github.com/Lobitoxxx/Wayra_AI.git
 cd Wayra_AI
+uv sync --group dev
 ```
 
-2. Crear y activar el entorno virtual:
+Ejecutar pruebas:
 
 ```bash
-uv venv .venv
-source .venv/bin/activate  # En Linux/Mac
-.venv\Scripts\activate  # En Windows
-```
-
-3. Instalar las dependencias:
-
-```bash
-uv pip install -e .
-```
-
-## Uso
-
-### Ejecutar el Sistema Completo (F2-F8)
-
-Para ejecutar todo el pipeline desde la ingesta hasta la preparación para modelado:
-
-```bash
-# Descargar datos CHIRPS reales (3 días)
-uv run python -m wayra.ingestion.chirps 2024-06-15
-uv run python -m wayra.ingestion.chirps 2024-06-16
-uv run python -m wayra.ingestion.chirps 2024-06-17
-
-# Ejecutar todo el pipeline de preprocesado
-uv run python scripts/smoke_f2.py
-uv run python scripts/smoke_f3.py
-uv run python scripts/smoke_f4.py
-uv run python scripts/smoke_f5.py
-uv run python scripts/smoke_f6.py
-uv run python scripts/smoke_f7.py
-uv run python scripts/smoke_f8.py
-```
-
-### Ejecutar la API
-
-```bash
-uv run python -m wayra.api
-```
-
-La API estará disponible en `http://localhost:8000`
-
-### Ejecutar la Interfaz Web
-
-```bash
-uv run python -m wayra.web
-```
-
-La interfaz web estará disponible en `http://localhost:5000`
-
-## Arquitectura del Sistema
-
-Wayra AI sigue una arquitectura modular y secuencial donde cada fase procesa la salida de la anterior, asegurando trazabilidad completa y evitando fugas de datos.
-
-### Componentes Principales
-
-1. **Ingesta de Datos (F2)**: Descarga reanudable de CHIRPS v3.0 rnl con verificación SHA-256
-2. **Almacenamiento Raw**: Guardado de archivos TIF y manifiestos JSONL
-3. **Preprocesado (F3-F5)**: Re-muestreo 0.05°→0.1°, aplicación de máscara oficial de Perú
-4. **División Temporal (F4)**: Partición cronológica train/val/test sin fugas
-5. **Selección de Features (F6)**: Extracción de características estadísticas y espaciales
-6. **Preparación para Modelado (F7)**: Preparación de datos para algoritmos de aprendizaje
-7. **Evaluación (F8)**: Preparación para evaluación final con conjunto de test
-8. **API (F9+)**: Interfaz REST para consultas de predicción
-9. **Interfaz Web (F9+)**: Consulta gráfica en español
-10. **Documentación**: Manifestos JSON trazables y diagramas Mermaid/Archify
-
-## Diagramas Mermaid
-
-### Arquitectura General del Sistema
-
-```mermaid
-flowchart TD
-    %% Componentes principales
-    subgraph Ingesta["F2: Ingesta de Datos"]
-        A[Descarga CHIRPS] --> B[Verificación SHA-256]
-        B --> C[Guardado TIF + JSONL]
-    end
-    
-    subgraph Almacenamiento["Almacenamiento de Datos"]
-        C --> D[Data Raw]
-        D --> E[Data Procesada]
-    end
-    
-    subgraph Preprocesado["F3-F5: Preprocesado Geoespacial"]
-        E --> F[Re-muestreo 0.05°→0.1°]
-        F --> G[Máscara Perú Oficial]
-        G --> H[Field 0.1°]
-    end
-    
-    subgraph Division["F4: División Temporal"]
-        H --> I[Split Cronológico]
-        I --> J[Train/Val/Test]
-    end
-    
-    subgraph Features["F6: Features Anti-fuga"]
-        J --> K[Extracción de Features]
-        K --> L[Features Listos]
-    end
-    
-    subgraph Modelado["F7-F8: Preparación para Modelado"]
-        L --> M[Datos Listos para Modelado]
-        M --> N[Preparación Evaluación]
-    end
-    
-    subgraph Servicios["F9+: Servicios"]
-        N --> O[API FastAPI]
-        O --> P[Web en Español]
-        P --> Q[Documentación]
-    end
-    
-    %% Conexiones principales
-    A --> B --> C --> D --> E --> F --> G --> H --> I --> J --> K --> L --> M --> N --> O --> P --> Q
-```
-
-### Flujo de Datos Detallado
-
-```mermaid
-flowchart LR
-    %% Fuente de datos
-    CHIRPS[CHIRPS v3.0 rnl<br/>UCSB · 0.05° diario] -->|GET TIF| Ingesta[Descarga CHIRPS]
-    
-    %% Ingesta
-    Ingesta -->|TIF + sha256| Raw[Data Raw<br/>TIF + manifiesto JSONL]
-    
-    %% Preprocesado
-    Raw -->|TIF 0.05°| Regrid[Re-muestreo 0.05°→0.1°<br/>box-mean 2×2]
-    Regrid -->|field 0.1°| Mask[Máscara Perú Oficial<br/>geoBoundaries PER-ADM0]
-    Mask -->|field enmascarado| Split[División Temporal]
-    
-    %% División Temporal
-    Split -->|train_field.npy| Train[Train Field<br/>0.1° con máscara]
-    Split -->|val_field.npy| Val[Val Field<br/>0.1° con máscara]
-    Split -->|test_field.npy| Test[Test Field<br/>0.1° con máscara]
-    
-    %% Features y Modelado
-    Train -->|train_field.npy| Features[Features Anti-fuga<br/>7 estadísticas/espaciales]
-    Features -->|features.npy| Model[Modelado Listo<br/>train + features]
-    Model -->|model_ready.npy| Eval[Evaluación Preparada<br/>test set listo]
-    
-    %% Servicios
-    Eval -->|modelo| API[API FastAPI<br/>Endpoint /predict]
-    API -->|JSON| Web[Web en Español<br/>Interfaz gráfica]
-    Web -->|consulta| Usuario[Usuario Final]
-    
-    %% Documentación
-    API -->|manifestos| Docs[Documentación<br/>Mermaid + Archify]
-    Docs -->|visualización| Usuario
-```
-
-### Arquitectura de Componentes
-
-```mermaid
-classDiagram
-    class ChirpsRetriever {
-        +__init__(session: Session = None)
-        +retrieve(url: str, dest: Path, manifest: Path) : ManifestRecord
-        +_expected_sha(url: str) : str
-        +_published_at(url: str) : str
-        +_observation_time(url: str) : str
-    }
-    
-    class Mesh {
-        <<dataclass>>
-        -xmin: float
-        -xmax: float
-        -ymin: float
-        -ymax: float
-        -res: float
-        +cols: int
-        +rows: int
-        +shape: tuple[int, int]
-        +lons(): ndarray
-        +lats(): ndarray
-        +to_meta(): dict
-    }
-    
-    class PeruMask {
-        +peru_mask(mesh: Mesh) : ndarray
-        +load_peru_boundary() : dict
-    }
-    
-    class DataPipeline {
-        +download_chirps(date: str) : Path
-        +regrid_01(chirps: ndarray, geo: tuple) : tuple
-        +apply_mask(field: ndarray, mesh: Mesh) : ndarray
-        +save_artifacts(field: ndarray, mask: ndarray) : None
-    }
-    
-    class ManifestRecord {
-        -url: str
-        -shasum256: str
-        -bytes: int
-        -published_at: str
-        -observation_time: str
-        -retrieved_at: str
-    }
-    
-    ChirpsRetriever --> "usa" : requests.Session
-    ChirpsRetriever --> "genera" : ManifestRecord
-    Mesh --> "usa" : numpy
-    PeruMask --> "usa" : numpy, rasterio
-    DataPipeline --> "usa" : ChirpsRetriever, Mesh, PeruMask
-```
-
-### Secuencia de Operaciones (F2-F8)
-
-```mermaid
-sequenceDiagram
-    participant Usuario
-    participant Sistema as Wayra AI
-    participant CHIRPS as CHIRPS Server
-    participant Disco as Almacenamiento Local
-    
-    Usuario->>Sistema: Ejecutar smoke_f2.py
-    Sistema->>CHIRPS: GET chirps-v3.0.rnl.2024.06.15.tif
-    CHIRPS-->>Sistema: TIF 17.3 MB + sha256
-    Sistema->>Disco: Guardar TIF + manifiesto JSONL
-    
-    Usuario->>Sistema: Ejecutar smoke_f3.py
-    Sistema->>Disco: Leer TIF 0.05°
-    Sistema->>Sistema: Regrid box-mean 2×2 → 0.1°
-    Sistema->>Disco: Guardar field_0p1.npy
-    
-    Usuario->>Sistema: Ejecutar smoke_f4.py
-    Sistema->>Disco: Leer manifest F3
-    Sistema->>Sistema: Aplicar máscara Perú oficial
-    Sistema->>Disco: Generar división cronológica
-    Sistema->>Disco: Guardar manifest F4
-    
-    Usuario->>Sistema: Ejecutar smoke_f5.py
-    Sistema->>Disco: Leer train_field.npy
-    Sistema->>Sistema: Aplicar máscara Perú
-    Sistema->>Disco: Guardar train_field.npy + mask.npy
-    
-    Usuario->>Sistema: Ejecutar smoke_f6.py
-    Sistema->>Disco: Leer train_field.npy
-    Sistema->>Sistema: Extraer 7 features anti-fuga
-    Sistema->>Disco: Guardar features.npy
-    
-    Usuario->>Sistema: Ejecutar smoke_f7.py
-    Sistema->>Sistema: Verificar datos listos para modelado
-    Sistema->>Disco: Guardar manifest F7
-    
-    Usuario->>Sistema: Ejecutar smoke_f8.py
-    Sistema->>Disco: Leer manifest F4 (split)
-    Sistema->>Sistema: Verificar test set listo
-    Sistema->>Disco: Guardar manifest F8
-    
-    Usuario->>Sistema: Iniciar API
-    Sistema->>Usuario: Servir endpoint /predict
-    
-    Usuario->>Sistema: Iniciar Web
-    Sistema->>Usuario: Servir interfaz en español
-```
-
-## Documentación Técnica
-
-### Ingesta de Datos (F2)
-
-El módulo de ingesta maneja la descarga reanudable de datos CHIRPS v3.0 rnl con verificación de integridad.
-
-```python
-from wayra.ingestion.chirps import ChirpsRetriever
-
-# Crear retriever
-retriever = ChirpsRetriever()
-
-# Descargar día específico
-record = retriever.retrieve(
-    url="https://data.chc.ucsb.edu/products/CHIRPS/v3.0/daily/final/rnl/2024/chirps-v3.0.rnl.2024.06.15.tif",
-    dest=Path("data/raw/chirps-rnl/daily/2024/chirps-v3.0.rnl.2024.06.15.tif"),
-    manifest=Path("data/raw/chirps-rnl/manifiestos/chirps-v3.0.rnl.2024.06.15.manifest.jsonl")
-)
-
-# El record contiene:
-# - url: URL de descarga
-# - shasum256: hash SHA-256 del archivo
-# - bytes: tamaño en bytes
-# - retrieved_at: timestamp de descarga
-```
-
-### Preprocesado Geoespacial (F3)
-
-El preprocesado aplica re-muestreo 0.05°→0.1° mediante agregación box-mean y aplica la máscara oficial de Perú.
-
-```python
-from wayra.preprocessing.mesh import Mesh, regrid_block
-from wayra.preprocessing.mask import peru_mask
-import numpy as np
-import rasterio
-
-# 1) Cargar datos CHIRPS 0.05°
-with rasterio.open("data/raw/chirps-rnl/daily/2024/chirps-v3.0.rnl.2024.06.15.tif") as ds:
-    chirps = ds.read(1).astype(np.float32)
-    geo = (ds.bounds.left, ds.bounds.top, ds.res[0], ds.res[1])  # (xmin, ymax, xres, yres)
-
-# 2) Crear malla de trabajo 0.1°
-mesh = Mesh()  # Usa PERU_BBOX y GRID_RES_DEG desde config
-
-# 3) Re-muestreo 0.05° → 0.1° (agregación box-mean 2×2)
-field, _ = regrid_block(chirps, geo, mesh)
-
-# 4) Aplicar máscara oficial de Perú
-mask = peru_mask(mesh)
-train_field = np.where(mask > 0, field, np.nan).astype(np.float32)
-```
-
-### División Temporal (F4)
-
-La división temporal sigue un enfoque cronológico para evitar fugas de datos (RQ-07/08).
-
-```python
-from wayra.preprocessing.mesh import Mesh
-import json
-
-# Cargar manifest F4 (generado por smoke_f4.py)
-with open("data/processed/preprocessing/F4/manifest_F4.jsonl", encoding="utf-8") as f:
-    f4_manifest = json.loads(f.readline())
-
-# Obtener splits
-train_dias = f4_manifest.get("splits", {}).get("train", [])
-val_dias = f4_manifest.get("splits", {}).get("val", [])
-test_dias = f4_manifest.get("splits", {}).get("test", [])
-
-# Cargar datos correspondientes
-train_fields = [
-    np.load(f"data/raw/chirps-rnl/daily/2024/{dia}")
-    for dia in train_dias
-]
-val_fields = [
-    np.load(f"data/raw/chirps-rnl/daily/2024/{dia}")
-    for dia in val_dias
-]
-test_fields = [
-    np.load(f"data/raw/chirps-rnl/daily/2024/{dia}")
-    for dia in test_dias
-]
-
-# Aplicar máscara Perú a cada campo
-mesh = Mesh()
-train_masks = [peru_mask(mesh) for _ in train_dias]
-val_masks = [peru_mask(mesh) for _ in val_dias]
-test_masks = [peru_mask(mesh) for _ in test_dias]
-
-train_data = [np.where(m > 0, f, np.nan) for f, m in zip(train_fields, train_masks)]
-val_data = [np.where(m > 0, f, np.nan) for f, m in zip(val_fields, val_masks)]
-test_data = [np.where(m > 0, f, np.nan) for f, m in zip(test_fields, test_masks)]
-```
-
-### Features Anti-fuga (F6)
-
-Las features anti-fuga utilizan estadísticas locales y espaciales para evitar sobreajuste.
-
-```python
-from wayra.preprocessing.mesh import Mesh
-import numpy as np
-
-# Cargar train_field y mask
-train_field = np.load("data/processed/preprocessing/F5/train_field.npy")
-mask = np.load("data/processed/preprocessing/F5/train_mask.npy")
-
-# Extraer valores válidos (dentro de Perú)
-valid_values = train_field[mask > 0]
-
-# Features estadísticas locales
-features = {
-    "mean_local": np.mean(valid_values),
-    "std_local": np.std(valid_values),
-    "min_local": np.min(valid_values),
-    "max_local": np.max(valid_values),
-    "median_local": np.median(valid_values),
-}
-
-# Features espaciales (ventanas 3x3)
-spatial_features = []
-for i in range(0, train_field.shape[0], 3):
-    for j in range(0, train_field.shape[1], 3):
-        window = train_field[i:i+3, j:j+3]
-        window_mask = mask[i:i+3, j:j+3]
-        if np.any(window_mask > 0):
-            spatial_values = window[window_mask > 0]
-            if len(spatial_values) > 0:
-                spatial_features.append(np.mean(spatial_values))
-
-features["n_windows_valid"] = len(spatial_features)
-features["mean_spatial"] = np.mean(spatial_features) if spatial_features else 0
-
-# Vector de features final
-feature_vector = np.array(list(features.values()))
-feature_names = np.array(list(features.keys()))
-```
-
-### API de Predicción (F9+)
-
-La API FastAPI proporciona endpoints para consultas de predicción.
-
-```python
-from fastapi import FastAPI
-import numpy as np
-from pathlib import Path
-
-app = FastAPI()
-
-# Cargar modelo y datos preprocesados (en producción)
-# model = joblib.load("model.pkl")
-# scaler = joblib.load("scaler.pkl")
-
-@app.get("/predict")
-async def predict(latitude: float, longitude: float):
-    """
-    Obtiene predicción de precipitación para coordenadas dada.
-    En producción, aquí se aplicaría el modelo entrenado.
-    """
-    # En producción:
-    # 1. Convertir coordenadas a índices de malla
-    # 2. Extraer features del punto
-    # 3. Normalizar con scaler
-    # 4. Predecir con model
-    # 5. Devolver resultado
-    
-    return {
-        "prediction": 0.0,  # Placeholder
-        "units": "mm/día",
-        "confidence": 0.95,
-        "timestamp": "2024-06-15T00:00:00Z"
-    }
-
-@app.get("/health")
-async def health():
-    return {"status": "healthy", "service": "Wayra AI API"}
-```
-
-### Interfaz Web (F9+)
-
-La interfaz web proporciona una experiencia de usuario en español para consultar predicciones.
-
-```python
-from flask import Flask, render_template, request, jsonify
-import requests
-
-app = Flask(__name__)
-API_URL = "http://localhost:8000"
-
-@app.route("/")
-def index():
-    return render_template("index.html")
-
-@app.route("/predict", methods=["POST"])
-def predict():
-    data = request.get_json()
-    lat = data.get("latitude")
-    lon = data.get("longitude")
-    
-    # Llamar a la API
-    response = requests.post(f"{API_URL}/predict", 
-                           json={"latitude": lat, "longitude": lon})
-    
-    if response.status_code == 200:
-        return jsonify(response.json())
-    else:
-        return jsonify({"error": "Error en la predicción"}), 500
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
-```
-
-## Formatos de Almacenamiento
-
-### Manifiestos JSONL
-
-Cada etapa genera un manifiesto JSONL (JSON Lines) para trazabilidad completa:
-
-```jsonl
-{
-  "fase": "F3",
-  "objetivo": "D-005 (malla 0.1°)",
-  "crs": "EPSG:4326",
-  "res_deg": 0.1,
-  "bbox": [-81.5, -68.0, -18.7, -0.5],
-  "mesh_shape": [182, 135],
-  "chirps_tif": "chirps-v3.0.rnl.2024.06.15.tif",
-  "chirps_sha256": "e42266ed31fb86f335f2ff31af3635f964d7d1e2905713057bff5b67dda0203d",
-  "regrid": "box-mean-2x2",
-  "mask_src": "data/external/geoboundaries/PER-ADM0/geoBoundaries-PER-ADM0.geojson",
-  "mask_celdas_peru": 11055,
-  "bytes_field_npy": 98280,
-  "bytes_mask_npy": 24570,
-  "tokens_smoke_aprox": 49140,
-  "duracion_s": 0.331,
-  "producido_at": "2026-09-22T21:04:05.933094+00:00"
-}
-```
-
-### Archivos NPY
-
-Los arrays de NumPy se guardan en formato `.npy` para eficiencia:
-
-- `field_0p1.npy`: Campo de precipitación 0.1° (182×135)
-- `mask_peru_0p1.npy`: Máscara de Perú (182×135, uint8)
-- `features.npy`: Vector de features (7,)
-- `feature_names.npy`: Nombres de features (7,)
-
-## Arquitectura de Directorios
-
-```
-wayra-ai/
-├── data/
-│   ├── raw/
-│   │   └── chirps-rnl/
-│   │       ├── daily/
-│   │       │   ├── 2024/
-│   │       │   │   ├── chirps-v3.0.rnl.2024.06.15.tif
-│   │       │   │   ├── chirps-v3.0.rnl.2024.06.16.tif
-│   │       │   │   └── chirps-v3.0.rnl.2024.06.17.tif
-│   │       │   └── manifiestos/
-│   │       │       ├── chirps-v3.0.rnl.2024.06.15.manifest.jsonl
-│   │       │       ├── chirps-v3.0.rnl.2024.06.16.manifest.jsonl
-│   │       │       └── chirps-v3.0.rnl.2024.06.17.manifest.jsonl
-│   │       └── external/
-│   │       │   └── geoboundaries/
-│   │       │       └── PER-ADM0/
-│   │       │           └── geoBoundaries-PER-ADM0.geojson
-│   └── processed/
-│       └── preprocessing/
-│           ├── F3/
-│           │   ├── field_0p1.npy
-│           │   ├── mask_peru_0p1.npy
-│           │   └── manifest_F3.jsonl
-│           ├── F4/
-│           │   └── manifest_F4.jsonl
-│           ├── F5/
-│           │   ├── train_field.npy
-│           │   ├── train_mask.npy
-│           │   └── manifest_F5.jsonl
-│           ├── F6/
-│           │   ├── features.npy
-│           │   ├── feature_names.npy
-│           │   └── manifest_F6.jsonl
-│           ├── F7/
-│           │   ├── manifest_F7.jsonl
-│           │   └── (archivos de modelo)
-│           └── F8/
-│           │   └── manifest_F8.jsonl
-├── docs/
-│   ├── knowledge/
-│   │   ├── 00-index.md
-│   │   ├── 02-requirements.md
-│   │   ├── 07-progress.md
-│   │   └── ...
-│   └── architecture/
-│       └── diagrams/
-│           ├── architecture_wayra.json
-│           ├── architecture_wayra.html
-│           ├── dataflow_wayra.json
-│           ├── dataflow_wayra.html
-│           ├── lifecycle_wayra.json
-│           └── lifecycle_wayra.html
-├── src/
-│   ├── wayra/
-│   │   ├── __init__.py
-│   │   ├── config.py
-│   │   ├── __pycache__/
-│   │   ├── api/
-│   │   │   └── __init__.py
-│   │   ├── ingestion/
-│   │   │   ├── __init__.py
-│   │   │   └── chirps.py
-│   │   ├── preprocessing/
-│   │   │   ├── __init__.py
-│   │   │   ├── mesh.py
-│   │   │   └── mask.py
-│   │   ├── web/
-│   │   │   └── __init__.py
-│   │   └── web/
-│   │       └── __init__.py
-├── scripts/
-│   ├── smoke_f2.py
-│   ├── smoke_f3.py
-│   ├── smoke_f4.py
-│   ├── smoke_f5.py
-│   ├── smoke_f6.py
-│   ├── smoke_f7.py
-│   ├── smoke_f8.py
-│   └── smoke_f9.py
-├── tests/
-├── apps/
-├── models/
-├── pyproject.toml
-├── README.md
-└── LICENSE
-```
-
-## Guía de Contribución
-
-### Proceso de Contribución
-
-1. Haz un fork del repositorio
-2. Crea una nueva rama: `git checkout -b feature/nueva-caracteristica`
-3. Realiza tus cambios
-4. Haz commit: `git commit -m "Descripción clara del cambio"`
-5. Haz push: `git push origin feature/nueva-caracteristica`
-6. Abre un Pull Request
-
-### Estándares de Código
-
-- Seguir PEP 8 para estilo de Python
-- Escribir docstrings para todas las funciones y clases
-- Incluir comentarios explicativos para lógica compleja
-- Mantener los commits atómicos y enfocados
-- Actualizar la documentación cuando se modifique la funcionalidad
-
-### Ejecutar Pruebas
-
-```bash
-# Ejecutar tests unitarios
 uv run pytest
-
-# Ejecutar cobertura de pruebas
-uv run pytest --cov=wayra
-
-# Verificar formato
-uv run ruff check .
-uv run black --check .
 ```
 
-## Licencia
+Ejemplo de ingesta CHIRPS:
 
-Este proyecto está bajo la licencia MIT. Consulta el archivo [LICENSE](LICENSE) para más detalles.
+```bash
+uv run python -m wayra.ingestion.chirps 2024-06-15
+```
 
-## Contacto
+El comando descarga información desde una fuente externa; su éxito depende de conectividad y disponibilidad del proveedor.
 
-Para más información, reportar errores o contribuir al proyecto:
+### Con pip
 
-- **Email**: [luis62david@gmail.com](mailto:luis62david@gmail.com)
-- **GitHub**: [https://github.com/Lobitoxxx/Wayra_AI](https://github.com/Lobitoxxx/Wayra_AI)
-- **Issues**: [https://github.com/Lobitoxxx/Wayra_AI/issues](https://github.com/Lobitoxxx/Wayra_AI/issues)
+```bash
+python -m venv .venv
+# Windows
+.venv\Scripts\activate
+# Linux/macOS
+source .venv/bin/activate
 
-## Agradecimientos
-
-- **Datos Climáticos**: CHIRPS dataset proporcionado por UCSB Climate Hazards Center
-- **Límites Geográficos**: Límite oficial de Perú proporcionado por geoBoundaries
-- **Evaluación de Modelos**: LazyPredict para evaluación rápida de modelos
-- **Comunidad Open Source**: Herramientas y bibliotecas de código abierto utilizadas
+python -m pip install -e . pytest pytest-cov
+pytest
+```
 
 ---
 
-*Documentación generada automáticamente el 2026-09-22*
-*Wayra AI v0.1.0 - Sistema de Análisis Climático y Predicción de Precipitaciones del Perú*
+## Calidad y CI
+
+GitHub Actions ejecuta sobre Python 3.12:
+
+1. instalación del paquete;
+2. compilación de fuentes;
+3. pruebas unitarias;
+4. reporte de cobertura.
+
+Las pruebas actuales se concentran en:
+
+- parsing y trazabilidad temporal de CHIRPS;
+- comportamiento de checksum;
+- agregación 0.05° → 0.1°;
+- nodata;
+- incompatibilidad de resoluciones;
+- contratos de forma de la malla.
+
+Las pruebas científicas de modelos se añadirán cuando existan datasets Gold reproducibles.
+
+---
+
+## Trazabilidad de requisitos académicos
+
+| Rúbrica | Artefacto objetivo | Estado |
+|---|---|---|
+| EDA de regresión | `docs/academic/` + notebook/script reproducible | pendiente |
+| Preparación X/y y split | pipeline Gold + temporal split | pendiente |
+| LazyRegressor | benchmark versionado | pendiente |
+| RMSE / R² y ganador | reporte de experimento | pendiente |
+| Nueva predicción de regresión | inferencia retrospectiva | pendiente |
+| EDA de clasificación | reporte con balance de clases | pendiente |
+| LazyClassifier | benchmark versionado | pendiente |
+| Top 2 + matrices de confusión | reporte de evaluación | pendiente |
+| Nueva predicción y probabilidad | inferencia retrospectiva | pendiente |
+
+Consulta la especificación académica en [`docs/academic/avance-2-mapping.md`](docs/academic/avance-2-mapping.md).
+
+---
+
+## Documentación
+
+- [Especificación técnica](docs/architecture/wayra-ai-specification.md)
+- [Catálogo de datasets](docs/sources/dataset-catalog.md)
+- [Integración Archify](docs/architecture/archify.md)
+- [Arquitectura base](docs/architecture/00-arquitectura.md)
+- [Requisitos](docs/knowledge/02-requirements.md)
+- [Decisiones ADR](docs/knowledge/08-decisions.md)
+- [Estado/progreso](docs/knowledge/07-progress.md)
+- [Mapeo de la rúbrica](docs/academic/avance-2-mapping.md)
+
+`AGENTS.md` contiene reglas de trabajo para OpenCode y otros agentes: usar memoria selectiva, Graphify/Archify cuando aporten valor, comprobar el código y no inventar métricas.
+
+---
+
+## Hoja de ruta
+
+```mermaid
+flowchart LR
+    A[1. Base CHIRPS + tests] --> B[2. Catálogo Bronze/Silver/Gold]
+    B --> C[3. ERA5-Land + SENAMHI]
+    C --> D[4. NOAA + IMARPE]
+    D --> E[5. Dataset maestro]
+    E --> F[6. Regresión]
+    E --> G[7. Clasificación]
+    F --> H[8. Evaluación académica]
+    G --> H
+    H --> I[9. API retrospectiva]
+    I --> J[10. Web]
+    J --> K[11. Investigación operativa]
+```
+
+Prioridad inmediata: **construir una serie temporal nacional suficiente y un dataset Gold reproducible antes de entrenar modelos o diseñar dashboards como si ya existieran resultados finales.**
+
+## Limitaciones actuales
+
+- La serie CHIRPS usada en smokes anteriores era demasiado corta para una evaluación científica final.
+- Los adaptadores ERA5-Land, SENAMHI, NOAA e IMARPE todavía no forman parte del código funcional.
+- No existen modelos persistidos ni resultados finales versionados.
+- API y frontend siguen siendo arquitectura objetivo.
+- La fecha de publicación histórica de cada fuente no siempre puede reconstruirse; cuando no haya evidencia se registra como desconocida.
+- La cuadrícula 0.1° no elimina incertidumbre espacial ni convierte una estimación raster en una observación de estación.
+
+## Seguridad y credenciales
+
+- Nunca versionar claves CDS, tokens o contraseñas.
+- Utilizar `.env` o mecanismos locales equivalentes, excluidos por Git.
+- No imprimir secretos en logs, notebooks o documentación.
+- Validar licencias y condiciones de redistribución antes de incluir datasets en releases.
+
+## Licencia
+
+La licencia del **código** todavía no ha sido seleccionada. No asumir MIT, Apache-2.0 u otra licencia hasta que exista un archivo `LICENSE` aprobado.
+
+Los **datos** conservan las licencias y términos de sus proveedores respectivos.
+
+---
+
+### Principio rector
+
+> **Una predicción reproducible necesita datos trazables, un instante de disponibilidad verificable y una evaluación honesta.** Wayra AI prioriza esas propiedades antes de convertir resultados experimentales en funcionalidades visibles.
