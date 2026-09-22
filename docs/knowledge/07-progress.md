@@ -1,4 +1,4 @@
-﻿---
+---
 tipo: progreso
 estado: vigente
 fecha: 2026-09-22
@@ -7,95 +7,113 @@ tags: [wayra, progreso, estado]
 
 # Progreso — Wayra AI
 
-> Regla: no declarar "validado" sin pruebas ejecutadas. Porcentajes solo con criterio y evidencia.
+> Regla: no declarar “validado” sin una ejecución reproducible asociada a la versión de código correspondiente. Un smoke test no equivale a una evaluación científica final.
 
-## Sesión actual: configuración del entorno inteligente (2026-09-22)
-| Paso | Estado |
+## Estado ejecutivo
+
+### 🟩 Implementado en el núcleo
+
+- Configuración Python 3.12 + `uv`.
+- Adaptador CHIRPS v3 diario RNL.
+- Descarga temporal con archivo `.part` y soporte de reanudación cuando el servidor lo permite.
+- SHA-256 local y distinción entre hash local y checksum externo verificado.
+- Parsing correcto de `observation_time` desde el nombre CHIRPS.
+- `published_at` no se infiere desde la fecha observada.
+- Malla nacional 0.1° en EPSG:4326.
+- Máscara de Perú mediante PER-ADM0 versionado en el repositorio.
+- Remuestreo de una fuente fina a malla 0.1° con validación de relación de resoluciones y nodata.
+- Scripts smoke históricos F3–F8.
+- Documentación Obsidian + Mermaid + fuentes Archify.
+
+### 🟩 Rama `improve/architecture-docs-tests` — CI validada
+
+- corrección de trazabilidad temporal CHIRPS;
+- corrección del contrato de regrid 0.05° → 0.1°;
+- tests unitarios de ingesta y malla;
+- workflow de CI con Python 3.12/pytest;
+- README reescrito para distinguir implementado/planificado;
+- especificación de arquitectura y catálogo de datasets;
+- fuente Archify de arquitectura actual.
+
+**Evidencia CI:** GitHub Actions run `35793090677`, job `Python 3.12 tests`, finalizado con `success`: **9 tests passed** y **76% de cobertura total** sobre el paquete actual. Esto valida los contratos unitarios incluidos en la rama, no la evaluación científica de modelos de ML.
+
+## Evidencia histórica de smokes anteriores
+
+El repositorio documentó una prueba local con tres días CHIRPS reales: 2024-06-15, 2024-06-16 y 2024-06-17. Esa evidencia permitió explorar preprocesamiento, pero **no es un dataset suficiente para evaluación final de Machine Learning**.
+
+### F3 — preprocesamiento geoespacial
+
+Evidencia registrada en la sesión previa:
+
+- raster CHIRPS real;
+- malla 0.1°;
+- máscara PER-ADM0;
+- outputs NPY/manifiesto local.
+
+La implementación de `regrid_block` fue auditada posteriormente y se encontró un defecto en la relación de resoluciones; la rama de mejora lo corrige y sus contratos unitarios ya pasaron CI. Sin embargo, el smoke F3 con el raster real debe reejecutarse con esta versión para renovar la evidencia end-to-end.
+
+### F4 — split temporal histórico
+
+Con solo tres días disponibles se registró:
+
+```text
+train = [2024-06-15, 2024-06-16]
+validation = [2024-06-17]
+test = []
+```
+
+Este split demuestra únicamente el mecanismo cronológico. **No existe test final en esa prueba.**
+
+### F5–F8
+
+Se generaron artefactos smoke para explorar features y preparación de modelado, pero no existen en el repositorio:
+
+- un dataset nacional multi-año Gold validado;
+- benchmark LazyRegressor;
+- benchmark LazyClassifier;
+- modelo final persistido;
+- RMSE/R² finales;
+- matrices de confusión finales.
+
+Por tanto, no se considera que la regresión o clasificación estén completadas.
+
+## Matriz de implementación
+
+| Requisito | Estado real |
 |---|---|
-| F0 git init + estructura `wayra-ai/` | ✓ Completado |
-| Fase II: 6 skills Obsidian instaladas (`wayra-ai/.agents/skills/`) | ✓ Completado |
-| Fase II: memoria `docs/knowledge/` + `sessions/` | ✓ Completado |
-| Fase III: CLI `graphify` (paquete `graphifyy` vía uv) + skill Plugin | ✓ Completado |
-| Fase IV: verificar Archify + diagrama propuesto | ✓ Completado (HTML+JSON+PNG, vista percepción pendiente humano) |
-| Fase V-VI: README + Mermaid | ✓ Completado |
-| Fase VII-VIII: AGENTS.md | ✓ Completado |
-| Fase IX: metodología tokens | ✓ Completado (sin métricas → ahorro no verificado) |
-| Fase X: validación + informe | ✓ Completado |
+| RQ-01 Dataset maestro multi-fuente | No iniciado |
+| RQ-02 Regresión precipitación futura | No iniciado |
+| RQ-03 Clasificación lluvia extrema | No iniciado |
+| RQ-04 LazyPredict | No iniciado |
+| RQ-05 Baseline | No iniciado |
+| RQ-06 Split cronológico | Implementación conceptual/smoke; dataset final pendiente |
+| RQ-07 Trazabilidad temporal | En desarrollo; ingesta CHIRPS mejorada y testeada |
+| RQ-08 Modo retrospectivo | En desarrollo |
+| RQ-09 Operativo deshabilitado | Decisión vigente |
+| RQ-10 API | No iniciado |
+| RQ-11 Frontend | No iniciado |
+| RQ-12 Disclaimers | Documentado; aplicación pendiente |
+| RQ-20 Reproducibilidad | En desarrollo; CI unitario verde |
+| RQ-21 No inventar datos/métricas | Regla vigente |
+| RQ-22 Registro de modelos fallidos/exitosos | Pendiente de ML |
+| RQ-23 DataNote/trazabilidad académica | En desarrollo en `docs/academic/` |
+| RQ-24 Entorno OpenCode/Obsidian/Graphify/Archify | Parcialmente implementado |
 
-## F3 — Preprocesado geoespacial 0.1° (D-005/006, RQ-21/22) — smoke REAL ✓
-| Evidencia real medida (nada inventado) | Valor |
-|---|---|
-| Malla 0.1° real (EPSG:4326, bbox Perú oficial) | shape **(182, 135)** res 0.1° ✓ |
-| CHIRPS v3.0 rnl **real en disco** (F2, 2024.06.15.tif) | 2400×7200 @0.05° · res (0.05, 0.05) · sha256 `e422…0203d` ✓ |
-| Regrid real CHIRPS 0.05°→0.1° | `regrid_block` box-mean 2×2 → mesh (182,135) ✓ |
-| Máscara Perú **oficial real** (geoBoundaries PER-ADM0) | rasterizada → **11 055 celdas × 0.1°** Perú ✓ (fuente real en disco, no inventada) |
-| Manifiesto F3 trazable | `data/processed/preprocessing/F3/manifest_F3.jsonl` + field/mask NPY ✓ |
-| Tokens smoke F3 (RQ-22, medición aplicada) | ~49 140 (no ahorro → sin métrica verificado) |
+## Próximos hitos
 
-**Decisión medida (D-render):** el límite de Perú se rasteriza del GeoJSON **oficial real** (D-005/D-006), nunca de un polígono inventado (RQ-21).
-
-## F4 — Split temporal cronológico (D-008, RQ-07/08/31) — smoke REAL ✓
-| Evidencia real medida (nada inventado) | Valor |
-|---|---|
-| CHIRPS reales en disco | 3 días (06.15, 06.16, 06.17) · sha256 reales ✓ |
-| Split cronológico (aleatorio=False) | train=[06.15,06.16], val=[06.17], test=[] ✓ |
-| Manifiesto F4 trazable | `data/processed/preprocessing/F4/manifest_F4.jsonl` + splits reales ✓ |
-| Tokens smoke F4 (RQ-22, medición aplicada) | 3 (no inventa días) |
-
-**Decisión medida (D-render):** test=[] es honesto (solo 3 días reales), no se inventa para completar (RQ-31).
-
-## F5 — Train field listo para D-009 (RQ-21/22) — smoke REAL ✓
-| Evidencia real medida (nada inventado) | Valor |
-|---|---|
-| Día CHIRPS real | 06.15 · shape 182×135 @0.1° ✓ |
-| Regrid + máscara Perú real | `regrid_block` + `peru_mask` → train_field.npy ✓ |
-| Manifiesto F5 trazable | `data/processed/preprocessing/F5/manifest_F5.jsonl` + field/mask NPY ✓ |
-| Tokens smoke F5 (RQ-22, medición aplicada) | 24 570 (field real para D-009) |
-
-**Decisión medida (D-render):** train_field está listo para D-009 modelado con datos reales (RQ-21).
-
-## F6 — Features anti-fuga (D-009, RQ-21/22) — smoke REAL ✓
-| Evidencia real medida (nada inventado) | Valor |
-|---|---|
-| Train field real | 182×135 @0.1° · 11 055 celdas Perú ✓ |
-| Features anti-fuga | 7 features estadísticas/espaciales sin fugas ✓ |
-| Manifiesto F6 trazable | `data/processed/preprocessing/F6/manifest_F6.jsonl` + features.npy ✓ |
-| Tokens smoke F6 (RQ-22, medición aplicada) | 24 640 (features reales para D-009) |
-
-**Decisión medida (D-render):** features son anti-fuga (locales, no globales) para evitar overfit (D-009).
-
-## F7 — Modelado preparado (D-009) — smoke REAL ✓
-| Evidencia real medida (nada inventado) | Valor |
-|---|---|
-| Train field real | 182×135 @0.1° · 11 055 celdas Perú ✓ |
-| Features anti-fuga reales | 7 features listos para modelado ✓
-| Manifiesto F7 trazable | `data/processed/preprocessing/F7/manifest_F7.jsonl` + train_field/features.npy ✓
-| Tokens smoke F7 (RQ-22, medición aplicada) | 24 640 (datos listos para LazyPredict u otros modelos) |
-
-**Decisión medida (D-render):** train_field y features están listos para D-009 modelado con datos reales (RQ-21).
-
-## F8 — Evaluación final con test set REAL (D-010) — smoke REAL ✓
-| Evidencia real medida (nada inventado) | Valor |
-|---|---|
-| Split temporal REAL de F4 | test_dias: [] (porque solo 3 días reales → test vacío honesto) ✓ |
-| Train field REAL de F5 | 182×135 @0.1° · 11 055 celdas Perú ✓ |
-| Features anti-fuga reales de F6 | 7 features listos para modelado ✓ |
-| Manifiesto F8 trazable | `data/processed/preprocessing/F8/manifest_F8.jsonl` + train_field/features.npy ✓ |
-| Tokens smoke F8 (RQ-22, medición aplicada) | 24 640 (evaluación preparada con datos reales) |
-
-**Decisión medida (D-render):** test set vacío es honesto (solo 3 días reales), no se inventa para completar (RQ-31).
-
-## Desarrollo funcional de Wayra AI
-- **RQ-06/RQ-21 (ingesta CHIRPS) — smoke real verificado F2** ✓
-  - `src/wayra/ingestion/chirps.py` (descarga reanudable via `Range`, sha256, manifiesto JSONL con `observation_time`/`published_at`/`retrieved_at`).
-  - CHIRPS real en disco: `data/raw/chirps-rnl/daily/2024/chirps-v3.0.rnl.2024.06.15.tif` (17,3 MB, sha256 `e422…0203d`, F2-C).
-- **RQ-21/RQ-22 (preprocesado geoespacial real) — smoke F3 autenticado** ✓
-  - `src/wayra/preprocessing/mesh.py::Mesh` malla 0.1° real (182, 135) @ EPSG:4326 (D-005).
-  - `regrid_block` real: CHIRPS 0.05° (2400×7200) → 0.1° por box-mean 2×2 (D-005, trazable, nunca inventa datos).
-  - `src/wayra/preprocessing/mask.py::peru_mask` límite oficial real geoBoundaries PER-ADM0 rasterizado (RQ-22) → **11 055 celdas Perú** @0.1°.
-  - Smoke `scripts/smoke_f3.py` exit 0, manifiesto `data/processed/preprocessing/F3/manifest_F3.jsonl` con sha256 CHIRPS + duración real medida.
-- **No iniciado (autorización pendiente)**: selección de días para el dataset (F4). Estado de requisitos: [[02-requirements]].
-- Fuentes auditadas sí ✓ (ver [[docs/sources/00-fuentes]]).
+1. Reejecutar F3 con la versión corregida y guardar evidencia end-to-end.
+2. Auditar y ampliar la serie temporal CHIRPS.
+3. Formalizar Bronze/Silver/Gold.
+4. Integrar al menos una segunda fuente climática.
+5. Construir dataset Gold nacional reproducible.
+6. Ejecutar EDA y los dos pipelines exigidos por la rúbrica.
+7. Solo después desarrollar API/web sobre resultados reales.
 
 ## Fuentes de verdad
-- Requisitos: [[02-requirements]] · Decisiones: [[08-decisions]] · Hoja de ruta: [[10-roadmap]] · Sesiones: [[sessions/]].
+
+- requisitos: [[02-requirements]];
+- decisiones: [[08-decisions]];
+- problemas conocidos: [[09-known-issues]];
+- arquitectura: `docs/architecture/wayra-ai-specification.md`;
+- datasets: `docs/sources/dataset-catalog.md`;
+- rúbrica: `docs/academic/avance-2-mapping.md`.
