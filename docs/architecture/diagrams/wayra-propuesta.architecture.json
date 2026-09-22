@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Wayra AI · Arquitectura propuesta (plan)",
+    "quality_profile": "showcase",
+    "viewBox": [1380, 500],
+    "views": [
+      {
+        "id": "pipe-datos",
+        "label": "Pipeline de datos",
+        "focus": ["fuentes", "ingestion", "almacen-raw", "preprocesado", "almacen-proc"],
+        "note": "De las fuentes oficiales al dataset procesado en malla 0.1°."
+      },
+      {
+        "id": "ml-e-inferencia",
+        "label": "ML e inferencia",
+        "focus": ["features", "modelos", "evaluacion", "inferencia", "api", "web"],
+        "note": "Ingeniería, modelos LazyPredict, evaluación y servicio retrospectivo."
+      }
+    ]
+  },
+  "components": [
+    { "id": "fuentes", "type": "external", "label": "Fuentes de datos", "sublabel": "6 fuentes oficiales", "pos": [30, 110], "size": [170, 60] },
+    { "id": "ingestion", "type": "backend", "label": "Ingesta", "sublabel": "src.ingestion", "pos": [320, 110], "size": [140, 60] },
+    { "id": "almacen-raw", "type": "database", "label": "Raw", "sublabel": "descargas + manifiestos", "pos": [610, 110], "size": [140, 60] },
+    { "id": "preprocesado", "type": "backend", "label": "Preprocesado / Geo", "sublabel": "malla 0.1° · Perú", "pos": [900, 110], "size": [140, 60] },
+    { "id": "almacen-proc", "type": "database", "label": "Procesado", "sublabel": "Parquet año-mes", "pos": [1190, 110], "size": [140, 60] },
+    { "id": "features", "type": "backend", "label": "Características", "sublabel": "src.features", "pos": [320, 250], "size": [140, 60] },
+    { "id": "modelos", "type": "backend", "label": "Modelos ML", "sublabel": "LazyPredict + baseline", "pos": [610, 250], "size": [140, 60] },
+    { "id": "evaluacion", "type": "backend", "label": "Evaluación", "sublabel": "métricas por región", "pos": [610, 400], "size": [140, 60] },
+    { "id": "inferencia", "type": "backend", "label": "Inferencia", "sublabel": "modo retrospectivo", "pos": [900, 250], "size": [140, 60] },
+    { "id": "api", "type": "backend", "label": "API", "sublabel": "FastAPI /api/v1", "pos": [1190, 250], "size": [140, 60] },
+    { "id": "web", "type": "frontend", "label": "Web", "sublabel": "mapa Perú · español", "pos": [1190, 400], "size": [140, 60] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Plataforma Wayra AI · propuesta", "wraps": ["ingestion", "almacen-raw", "preprocesado", "almacen-proc", "features", "modelos", "evaluacion", "inferencia", "api", "web"] }
+  ],
+  "connections": [
+    { "id": "fuentes-ing", "from": "fuentes", "to": "ingestion", "label": "descarga reanudable", "variant": "emphasis" },
+    { "id": "ing-raw", "from": "ingestion", "to": "almacen-raw", "label": "checksum + retrieved_at" },
+    { "id": "raw-pre", "from": "almacen-raw", "to": "preprocesado", "label": "validación QC" },
+    { "id": "pre-proc", "from": "preprocesado", "to": "almacen-proc" },
+    { "id": "proc-feat", "from": "almacen-proc", "to": "features", "fromSide": "bottom", "toSide": "top" },
+    { "id": "feat-mod", "from": "features", "to": "modelos", "label": "anti-fuga" },
+    { "id": "mod-eval", "from": "modelos", "to": "evaluacion", "label": "split cronológico", "variant": "dashed", "labelAt": [700, 340] },
+    { "id": "mod-inf", "from": "modelos", "to": "inferencia" },
+    { "id": "inf-api", "from": "inferencia", "to": "api", "label": "JSON" },
+    { "id": "api-web", "from": "api", "to": "web", "label": "predicción · GeoJSON", "variant": "emphasis", "labelAt": [1230, 335] }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Fuentes (auditadas 2026-09-22)", "items": ["CHIRPS v3.0 diario variante rnl (precipitación)", "ERA5-Land con clave CDS (temperatura/viento)", "NOAA ERSST5 + RONI detrended + ICEN (índices)", "SENAMHI opcional: sin cuenta, subset público"] },
+    { "dot": "emerald", "title": "Pipeline ML", "items": ["Malla 0.1° con cobertura nacional de Perú", "Validación anti-fuga temporal/espacial", "LazyPredict regresión + clasificación extrema", "Baseline ingenuo explícito y comparado"] },
+    { "dot": "amber", "title": "Estado actual", "items": ["Diagrama PROPUESTO: sin código funcional aún", "Entorno instalado: Obsidian + Graphify + Archify", "Memoria en docs/knowledge y AGENTS.md"] },
+    { "dot": "rose", "title": "Trazabilidad", "items": ["observation_time · published_at · retrieved_at · forecast_issued_at", "Modo operativo deshabilitado por decisión", "Sin sustituir a SENAMHI/ENFEN ni emitir alertas"] }
+  ]
+}

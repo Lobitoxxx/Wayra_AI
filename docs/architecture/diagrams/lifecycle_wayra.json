@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "Wayra AI - Trace de Ejecución F2-F8",
+    "quality_profile": "showcase",
+    "viewBox": [1440, 900]
+  },
+  "layout": {
+    "mode": "grid",
+    "cols": 8,
+    "gapX": 40,
+    "gapY": 50,
+    "cellW": 160,
+    "cellH": 80
+  },
+  "components": [
+    {
+      "id": "f2_start",
+      "type": "database",
+      "label": "F2: Inicio",
+      "sublabel": "descarga CHIRPS 06.15",
+      "row": 0,
+      "col": 0
+    },
+    {
+      "id": "f2_ingest",
+      "type": "external",
+      "label": "CHIRPS 06.15",
+      "sublabel": "17.3 MB · sha256",
+      "row": 0,
+      "col": 1
+    },
+    {
+      "id": "f3_mesh",
+      "type": "backend",
+      "label": "Malla 0.1°",
+      "sublabel": "(182,135)",
+      "row": 0,
+      "col": 2
+    },
+    {
+      "id": "f3_regrid",
+      "type": "backend",
+      "label": "Regrid 2×2",
+      "sublabel": "box-mean",
+      "row": 0,
+      "col": 3
+    },
+    {
+      "id": "f3_mask",
+      "type": "backend",
+      "label": "Máscara Perú",
+      "sublabel": "11055 celdas",
+      "row": 0,
+      "col": 4
+    },
+    {
+      "id": "f4_split",
+      "type": "backend",
+      "label": "Split cronológico",
+      "sublabel": "train/val/test",
+      "row": 0,
+      "col": 5
+    },
+    {
+      "id": "f5_train",
+      "type": "database",
+      "label": "Train Field",
+      "sublabel": "0.1° con máscara",
+      "row": 1,
+      "col": 0
+    },
+    {
+      "id": "f6_features",
+      "type": "database",
+      "label": "Features",
+      "sublabel": "7 anti-fuga",
+      "row": 1,
+      "col": 1
+    },
+    {
+      "id": "f7_model",
+      "type": "backend",
+      "label": "Modelado listo",
+      "sublabel": "para LazyPredict",
+      "row": 1,
+      "col": 2
+    },
+    {
+      "id": "f8_eval",
+      "type": "backend",
+      "label": "Evaluación preparada",
+      "sublabel": "test set listo",
+      "row": 1,
+      "col": 3
+    },
+    {
+      "id": "f9_done",
+      "type": "database",
+      "label": "Sistema Listo",
+      "sublabel": "API + Web",
+      "row": 1,
+      "col": 4
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Fase Inicial",
+      "wraps": ["f2_start", "f2_ingest", "f3_mesh", "f3_regrid", "f3_mask"]
+    },
+    {
+      "kind": "region",
+      "label": "Procesamiento",
+      "wraps": ["f4_split", "f5_train", "f6_features"]
+    },
+    {
+      "kind": "region",
+      "label": "Modelado",
+      "wraps": ["f7_model", "f8_eval", "f9_done"]
+    }
+  ],
+  "connections": [
+    { "id": "c1", "from": "f2_start", "to": "f2_ingest", "label": "descarga" },
+    { "id": "c2", "from": "f2_ingest", "to": "f3_mesh", "label": "→ malla" },
+    { "id": "c3", "from": "f3_mesh", "to": "f3_regrid", "label": "→ regrid" },
+    { "id": "c4", "from": "f3_regrid", "to": "f3_mask", "label": "→ máscara" },
+    { "id": "c5", "from": "f3_mask", "to": "f4_split", "label": "→ split" },
+    { "id": "c6", "from": "f4_split", "to": "f5_train", "label": "→ train" },
+    { "id": "c7", "from": "f5_train", "to": "f6_features", "label": "→ features" },
+    { "id": "c8", "from": "f6_features", "to": "f7_model", "label": "→ modelo" },
+    { "id": "c9", "from": "f7_model", "to": "f8_eval", "label": "→ evaluación" },
+    { "id": "c10", "from": "f8_eval", "to": "f9_done", "label": "→ listo" }
+  ]
+}

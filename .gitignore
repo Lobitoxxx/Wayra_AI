@@ -1,0 +1,52 @@
+# --- Entorno y dependencias ---
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# --- Node / frontend ---
+node_modules/
+dist/
+build/
+apps/web/.next/
+apps/web/out/
+
+# --- Datos y artefactos pesados (no versionar) ---
+data/raw/*
+data/interim/*
+data/processed/*
+models/*
+!models/.gitkeep
+*.parquet
+*.tif
+*.nc
+*.bin
+
+# --- Credenciales y configuraciones sensibles ---
+.env
+.env.local
+.env.*.local
+*.pem
+cdsapirc
+
+# --- Entorno de desarrollo inteligente (artefactos generados) ---
+graphify-out/
+docs/architecture/diagrams/*.html
+
+# --- Sistema ---
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.log
+
+# Almacenar los manifiestos pero no los datos descargados
+data/raw/.gitkeep
+data/interim/.gitkeep
+data/processed/.gitkeep

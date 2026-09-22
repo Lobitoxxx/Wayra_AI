@@ -1,0 +1,152 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Wayra AI - Arquitectura del Sistema",
+    "quality_profile": "showcase",
+    "viewBox": [1440, 900]
+  },
+  "layout": {
+    "mode": "grid",
+    "cols": 4,
+    "gapX": 60,
+    "gapY": 80,
+    "cellW": 300,
+    "cellH": 140
+  },
+  "components": [
+    {
+      "id": "ingesta",
+      "type": "external",
+      "label": "Ingesta CHIRPS",
+      "sublabel": "CHC UCSB · v3.0 rnl",
+      "tag": "F2",
+      "row": 0,
+      "col": 0
+    },
+    {
+      "id": "raw",
+      "type": "database",
+      "label": "Data Raw",
+      "sublabel": "TIF 0.05° · manifiesto JSONL",
+      "tag": "F2",
+      "row": 0,
+      "col": 1
+    },
+    {
+      "id": "preprocess",
+      "type": "backend",
+      "label": "Preprocesado",
+      "sublabel": "Mesh 0.1° · regrid · máscara",
+      "tag": "F3-F5",
+      "row": 0,
+      "col": 2
+    },
+    {
+      "id": "geoboundaries",
+      "type": "external",
+      "label": "Límite Oficial Perú",
+      "sublabel": "geoBoundaries · PER-ADM0",
+      "tag": "D-006",
+      "row": 0,
+      "col": 3
+    },
+    {
+      "id": "processed",
+      "type": "database",
+      "label": "Data Procesada",
+      "sublabel": "Field 0.1° · split · features",
+      "tag": "F3-F7",
+      "row": 1,
+      "col": 0
+    },
+    {
+      "id": "features",
+      "type": "backend",
+      "label": "Features anti-fuga",
+      "sublabel": "7 features locales",
+      "tag": "F6",
+      "row": 1,
+      "col": 1
+    },
+    {
+      "id": "model",
+      "type": "backend",
+      "label": "Modelado",
+      "sublabel": "LazyPredict · D-009",
+      "tag": "F7",
+      "row": 1,
+      "col": 2
+    },
+    {
+      "id": "evaluate",
+      "type": "backend",
+      "label": "Evaluación",
+      "sublabel": "D-010 · test set",
+      "tag": "F8",
+      "row": 1,
+      "col": 3
+    },
+    {
+      "id": "api",
+      "type": "cloud",
+      "label": "API FastAPI",
+      "sublabel": "Endpoint /predict",
+      "row": 2,
+      "col": 0
+    },
+    {
+      "id": "web",
+      "type": "frontend",
+      "label": "Web en Español",
+      "sublabel": "Interfaz gráfica",
+      "row": 2,
+      "col": 1
+    },
+    {
+      "id": "docs",
+      "type": "frontend",
+      "label": "Docs + Diagramas",
+      "sublabel": "README · Mermaid · Archify",
+      "row": 2,
+      "col": 2
+    },
+    {
+      "id": "github",
+      "type": "cloud",
+      "label": "GitHub",
+      "sublabel": "Lobitoxxx/Wayra_AI",
+      "row": 2,
+      "col": 3
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Ingesta y Almacenamiento (F2)",
+      "wraps": ["ingesta", "raw"]
+    },
+    {
+      "kind": "region",
+      "label": "Preprocesado y Modelado (F3-F8)",
+      "wraps": ["preprocess", "processed", "features", "model", "evaluate"]
+    },
+    {
+      "kind": "region",
+      "label": "Servicios (F9+)",
+      "wraps": ["api", "web", "docs"]
+    }
+  ],
+  "connections": [
+    { "id": "c1", "from": "ingesta", "to": "raw", "label": "descarga reanudable" },
+    { "id": "c2", "from": "raw", "to": "preprocess", "label": "TIF 0.05°" },
+    { "id": "c3", "from": "geoboundaries", "to": "preprocess", "label": "máscara oficial" },
+    { "id": "c4", "from": "preprocess", "to": "processed", "label": "field 0.1°" },
+    { "id": "c5", "from": "processed", "to": "features", "label": "features" },
+    { "id": "c6", "from": "features", "to": "model", "label": "train" },
+    { "id": "c7", "from": "model", "to": "evaluate", "label": "métricas" },
+    { "id": "c8", "from": "evaluate", "to": "api", "label": "modelo" },
+    { "id": "c9", "from": "api", "to": "web", "label": "JSON" },
+    { "id": "c10", "from": "docs", "to": "github", "label": "publicación" }
+  ]
+}

@@ -1,0 +1,168 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Wayra AI - Flujo de Datos (CHIRPS → Predicción)",
+    "quality_profile": "showcase",
+    "viewBox": [1920, 1080]
+  },
+  "layout": {
+    "mode": "grid",
+    "cols": 6,
+    "gapX": 50,
+    "gapY": 60,
+    "cellW": 280,
+    "cellH": 120
+  },
+  "components": [
+    {
+      "id": "chirps_source",
+      "type": "external",
+      "label": "CHIRPS v3.0 rnl",
+      "sublabel": "UCSB · 0.05° diario",
+      "tag": "F2",
+      "row": 0,
+      "col": 0,
+      "sources": [{ "path": "https://data.chc.ucsb.edu/products/CHIRPS/v3.0/daily/final/rnl/" }]
+    },
+    {
+      "id": "download",
+      "type": "backend",
+      "label": "Descarga CHIRPS",
+      "sublabel": "reanudable + checksum",
+      "tag": "F2",
+      "row": 0,
+      "col": 1,
+      "sources": [{ "path": "src/wayra/ingestion/chirps.py" }]
+    },
+    {
+      "id": "raw_data",
+      "type": "database",
+      "label": "Data Raw",
+      "sublabel": "TIF + manifiesto JSONL",
+      "tag": "F2",
+      "row": 0,
+      "col": 2,
+      "sources": [{ "path": "data/raw/chirps-rnl/" }]
+    },
+    {
+      "id": "regrid",
+      "type": "backend",
+      "label": "Re-muestreo 0.05→0.1°",
+      "sublabel": "box-mean 2×2 (D-005)",
+      "tag": "F3",
+      "row": 0,
+      "col": 3,
+      "sources": [{ "path": "src/wayra/preprocessing/mesh.py" }]
+    },
+    {
+      "id": "mask",
+      "type": "backend",
+      "label": "Máscara Perú",
+      "sublabel": "geoBoundaries PER-ADM0",
+      "tag": "D-006",
+      "row": 0,
+      "col": 4,
+      "sources": [{ "path": "src/wayra/preprocessing/mask.py" }]
+    },
+    {
+      "id": "split",
+      "type": "backend",
+      "label": "Split temporal",
+      "sublabel": "cronológico (D-008)",
+      "tag": "F4",
+      "row": 0,
+      "col": 5,
+      "sources": [{ "path": "scripts/smoke_f4.py" }]
+    },
+    {
+      "id": "train_field",
+      "type": "database",
+      "label": "Train Field",
+      "sublabel": "0.1° con máscara",
+      "tag": "F5",
+      "row": 1,
+      "col": 0,
+      "sources": [{ "path": "data/processed/preprocessing/F5/train_field.npy" }]
+    },
+    {
+      "id": "features",
+      "type": "database",
+      "label": "Features anti-fuga",
+      "sublabel": "7 features locales",
+      "tag": "F6",
+      "row": 1,
+      "col": 1,
+      "sources": [{ "path": "data/processed/preprocessing/F6/features.npy" }]
+    },
+    {
+      "id": "model_train",
+      "type": "backend",
+      "label": "Entrenamiento",
+      "sublabel": "LazyPredict / modelos",
+      "tag": "F7",
+      "row": 1,
+      "col": 2,
+      "sources": [{ "path": "scripts/smoke_f7.py" }]
+    },
+    {
+      "id": "evaluate",
+      "type": "backend",
+      "label": "Evaluación",
+      "sublabel": "val/test reales",
+      "tag": "F8",
+      "row": 1,
+      "col": 3,
+      "sources": [{ "path": "scripts/smoke_f8.py" }]
+    },
+    {
+      "id": "predict",
+      "type": "backend",
+      "label": "Predicción",
+      "sublabel": "API FastAPI",
+      "tag": "F9+",
+      "row": 1,
+      "col": 4,
+      "sources": [{ "path": "src/wayra/api/" }]
+    },
+    {
+      "id": "web_ui",
+      "type": "frontend",
+      "label": "Web Español",
+      "sublabel": "Interfaz gráfica",
+      "row": 1,
+      "col": 5,
+      "sources": [{ "path": "src/wayra/web/" }]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Ingesta (F2)",
+      "wraps": ["chirps_source", "download", "raw_data"]
+    },
+    {
+      "kind": "region",
+      "label": "Preprocesado (F3-F5)",
+      "w ["regrid", "mask", "split", "train_field", "features"]
+    },
+    {
+      "kind": "region",
+      "label": "Modelado y Evaluación (F6-F8)",
+      "w ["features", "model_train", "evaluate", "predict"]
+    }
+  ],
+  "connections": [
+    { "id": "c1", "from": "chirps_source", "to": "download", "label": "GET TIF" },
+    { "id": "c2", "from": "download", "to": "raw_data", "label": "TIF + sha256" },
+    { "id": "c3", "from": "raw_data", "to": "regrid", "label": "TIF 0.05°" },
+    { "id": "c4", "from": "mask", "to": "regrid", "label": "máscara 0.1°" },
+    { "id": "c5", "from": "regrid", "to": "split", "label": "field 0.1°" },
+    { "id": "c6", "from": "split", "to": "train_field", "label": "train_field.npy" },
+    { "id": "c7", "from": "train_field", "to": "features", "label": "features.npy" },
+    { "id": "c8", "from": "features", "to": "model_train", "label": "X_train" },
+    { "id": "c9", "from": "model_train", "to": "evaluate", "label": "predicciones" },
+    { "id": "c10", "from": "evaluate", "to": "predict", "label": "modelo" },
+    { "id": "c11", "from": "predict", "to": "web_ui", "label": "JSON API" }
+  ]
+}
